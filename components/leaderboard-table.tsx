@@ -25,6 +25,7 @@ interface LeaderboardEntry {
   cashCollected: number;
   totalRevenue: number;
   lastComment: string;
+  avatar_image?: string;
 }
 
 interface EntryWithRank extends LeaderboardEntry {
@@ -157,9 +158,9 @@ export function LeaderboardTable() {
     <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
         <div className="flex items-center justify-center gap-4">
-          <div className="relative w-12 h-12 overflow-hidden">
+          <div className="relative w-16 h-16 rounded-full overflow-hidden">
             <Image
-              src="/gigi1.png"
+              src="/gigi.png"
               alt="Gigi"
               fill
               className="object-cover"
@@ -167,7 +168,7 @@ export function LeaderboardTable() {
             />
           </div>
           <CardTitle className="text-2xl font-bold text-center">
-             GIGI&apos;s Sales Leaderboard
+            GIGI&apos;s Sales Leaderboard
           </CardTitle>
         </div>
       </CardHeader>
@@ -246,12 +247,27 @@ export function LeaderboardTable() {
                         transition={{ duration: 0.5 }}
                         className="flex items-center gap-3"
                       >
-                        <span className={cn(
-                          isTopThree && "font-semibold",
-                          index === 0 && "text-yellow-600 dark:text-yellow-400"
-                        )}>
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-800">
+                          <Image
+                            src={entry.avatar_image ? entry.avatar_image : `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.name}`}
+                            alt={`Avatar de ${entry.name}`}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <a
+                          href={`https://teliosa.slack.com/team/${entry.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={cn(
+                            isTopThree && "font-semibold",
+                            index === 0 && "text-yellow-600 dark:text-yellow-400",
+                            "hover:underline focus:underline underline-offset-2 transition-colors cursor-pointer text-inherit no-underline"
+                          )}
+                          style={{ textDecoration: "none" }}
+                        >
                           {entry.name}
-                        </span>
+                        </a>
                       </motion.div>
                     </TableCell>
                     <TableCell className="text-right">
