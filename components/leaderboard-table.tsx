@@ -158,7 +158,7 @@ export function LeaderboardTable() {
     <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
         <div className="flex items-center justify-center gap-4">
-          <div className="relative w-16 h-16 rounded-full overflow-hidden">
+          <div className="relative w-16 h-16 overflow-hidden">
             <Image
               src="/gigi1.png"
               alt="Gigi"
