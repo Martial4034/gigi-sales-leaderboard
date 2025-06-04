@@ -160,7 +160,7 @@ export function LeaderboardTable() {
         <div className="flex items-center justify-center gap-4">
           <div className="relative w-16 h-16 rounded-full overflow-hidden">
             <Image
-              src="/gigi.png"
+              src="/gigi1.png"
               alt="Gigi"
               fill
               className="object-cover"
