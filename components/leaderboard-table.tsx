@@ -1,0 +1,285 @@
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { ArrowUp, ArrowDown, Minus } from "lucide-react";
+import Image from "next/image";
+
+interface LeaderboardEntry {
+  id: string;
+  name: string;
+  nbSales: number;
+  cashCollected: number;
+  totalRevenue: number;
+  lastComment: string;
+}
+
+interface EntryWithRank extends LeaderboardEntry {
+  previousRank?: number;
+  currentRank: number;
+  bestRank?: number;
+  totalSales?: number;
+  lastUpdate?: string;
+}
+
+interface StoredPerformance {
+  bestRank: number;
+  totalSales: number;
+  lastUpdate: string;
+}
+
+const STORAGE_KEY = 'gigi-leaderboard-performance';
+
+const getPositionStyle = (index: number) => {
+  if (index === 0) {
+    return "bg-yellow-50 dark:bg-yellow-900/10";
+  }
+  return index % 2 === 0 ? "bg-gray-50 dark:bg-gray-900/40" : "bg-white dark:bg-black";
+};
+
+const getPositionIcon = (index: number) => {
+  switch (index) {
+    case 0:
+      return "🥇";
+    case 1:
+      return "🥈";
+    case 2:
+      return "🥉";
+    default:
+      return null;
+  }
+};
+
+const getRankChangeIcon = (previousRank: number | undefined, currentRank: number) => {
+  if (previousRank === undefined) return null;
+  const change = previousRank - currentRank;
+  
+  if (change > 0) {
+    return <ArrowUp className="w-4 h-4 text-green-500" />;
+  } else if (change < 0) {
+    return <ArrowDown className="w-4 h-4 text-red-500" />;
+  }
+  return <Minus className="w-4 h-4 text-gray-400" />;
+};
+
+const loadStoredPerformance = (): Record<string, StoredPerformance> => {
+  if (typeof window === 'undefined') return {};
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored ? JSON.parse(stored) : {};
+};
+
+const savePerformance = (id: string, performance: StoredPerformance) => {
+  if (typeof window === 'undefined') return;
+  const stored = loadStoredPerformance();
+  stored[id] = performance;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+};
+
+export function LeaderboardTable() {
+  const [entries, setEntries] = useState<EntryWithRank[]>([]);
+  const [previousEntries, setPreviousEntries] = useState<EntryWithRank[]>([]);
+  const entriesRef = useRef<EntryWithRank[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, "leaderboard"), orderBy("nbSales", "desc"));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const storedPerformance = loadStoredPerformance();
+      const now = new Date().toISOString();
+
+      const newEntries = snapshot.docs.map((doc, index) => {
+        const id = doc.id;
+        const data = doc.data() as LeaderboardEntry;
+        const currentRank = index + 1;
+        const previousRank = entriesRef.current.find(e => e.id === id)?.currentRank;
+        const stored = storedPerformance[id] || { bestRank: currentRank, totalSales: 0, lastUpdate: now };
+        
+        // Mettre à jour les performances stockées
+        const newBestRank = Math.min(currentRank, stored.bestRank);
+        const newTotalSales = data.nbSales;
+        const performance = {
+          bestRank: newBestRank,
+          totalSales: newTotalSales,
+          lastUpdate: now
+        };
+        savePerformance(id, performance);
+
+        return {
+          ...data,
+          id,
+          currentRank,
+          previousRank,
+          bestRank: newBestRank,
+          totalSales: newTotalSales,
+          lastUpdate: now
+        };
+      }) as EntryWithRank[];
+      
+      setPreviousEntries(entriesRef.current);
+      entriesRef.current = newEntries;
+      setEntries(newEntries);
+
+      newEntries.forEach((newEntry) => {
+        const oldEntry = entriesRef.current.find((e) => e.id === newEntry.id);
+        if (oldEntry && newEntry.nbSales > oldEntry.nbSales) {
+          const rankChange = oldEntry.currentRank - newEntry.currentRank;
+          let message = `${newEntry.name} a fait une nouvelle vente !`;
+          if (rankChange > 0) {
+            message += ` (+${rankChange} position${rankChange > 1 ? 's' : ''})`;
+          }
+          if (newEntry.currentRank === newEntry.bestRank) {
+            message += " 🏆 Meilleur rang !";
+          }
+          toast.success(message, {
+            description: `Total: ${newEntry.nbSales} ventes`,
+          });
+        }
+      });
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <Card className="w-full max-w-6xl mx-auto">
+      <CardHeader>
+        <div className="flex items-center justify-center gap-4">
+          <div className="relative w-12 h-12 overflow-hidden">
+            <Image
+              src="/gigi1.png"
+              alt="Gigi"
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+          <CardTitle className="text-2xl font-bold text-center">
+             GIGI&apos;s Sales Leaderboard
+          </CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[100px]">Position</TableHead>
+              <TableHead>Nom</TableHead>
+              <TableHead className="text-right">Ventes</TableHead>
+              <TableHead className="text-right">Cash Collecté</TableHead>
+              <TableHead className="text-right">Revenu Total</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <AnimatePresence mode="popLayout">
+              {entries.map((entry, index) => {
+                const oldEntry = previousEntries.find((e) => e.id === entry.id);
+                const hasChanged = oldEntry && oldEntry.nbSales !== entry.nbSales;
+                const isTopThree = index < 3;
+                const rankChange = entry.previousRank ? entry.previousRank - entry.currentRank : 0;
+                const isBestRank = entry.currentRank === entry.bestRank;
+
+                return (
+                  <motion.tr
+                    key={entry.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ 
+                      opacity: 1, 
+                      y: 0,
+                      backgroundColor: hasChanged ? "rgba(34, 197, 94, 0.1)" : undefined,
+                    }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ 
+                      duration: 0.5,
+                      backgroundColor: { duration: 1.5 }
+                    }}
+                    className={cn(
+                      getPositionStyle(index),
+                      "border-b transition-colors"
+                    )}
+                  >
+                    <TableCell className="font-medium">
+                      <motion.div
+                        animate={{ scale: hasChanged ? [1, 1.2, 1] : 1 }}
+                        transition={{ duration: 0.5 }}
+                        className={cn(
+                          "flex items-center gap-2 justify-center",
+                          isTopThree && "font-bold text-lg"
+                        )}
+                      >
+                        {getPositionIcon(index) ? (
+                          <span>{getPositionIcon(index)}</span>
+                        ) : (
+                          <span>{index + 1}</span>
+                        )}
+                        {getRankChangeIcon(entry.previousRank, entry.currentRank)}
+                        {rankChange !== 0 && (
+                          <span className={cn(
+                            "text-sm",
+                            rankChange > 0 ? "text-green-500" : "text-red-500"
+                          )}>
+                            {Math.abs(rankChange)}
+                          </span>
+                        )}
+                        {isBestRank && isTopThree && (
+                          <span className="text-yellow-500" title="Meilleur rang atteint">
+                            🏆
+                          </span>
+                        )}
+                      </motion.div>
+                    </TableCell>
+                    <TableCell>
+                      <motion.div
+                        animate={{ scale: hasChanged ? [1, 1.1, 1] : 1 }}
+                        transition={{ duration: 0.5 }}
+                        className="flex items-center gap-3"
+                      >
+                        <span className={cn(
+                          isTopThree && "font-semibold",
+                          index === 0 && "text-yellow-600 dark:text-yellow-400"
+                        )}>
+                          {entry.name}
+                        </span>
+                      </motion.div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <motion.div
+                        animate={{ scale: hasChanged ? [1, 1.2, 1] : 1 }}
+                        transition={{ duration: 0.5 }}
+                        className={cn(
+                          "font-bold",
+                          isTopThree && "text-lg",
+                          index === 0 && "text-yellow-600 dark:text-yellow-400"
+                        )}
+                      >
+                        {entry.nbSales}
+                      </motion.div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {entry.cashCollected.toLocaleString()} €
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {entry.totalRevenue.toLocaleString()} €
+                    </TableCell>
+                  </motion.tr>
+                );
+              })}
+            </AnimatePresence>
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+} 
