@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ArrowUp, ArrowDown, Minus } from "lucide-react";
 import Image from "next/image";
+import * as XLSX from "xlsx";
 
 interface LeaderboardEntry {
   id: string;
@@ -154,14 +155,37 @@ export function LeaderboardTable() {
     return () => unsubscribe();
   }, []);
 
+  // Tri personnalisé : nbSales décroissant, puis cashCollected décroissant
+  const sortedEntries = [...entries].sort((a, b) => {
+    if (b.nbSales !== a.nbSales) {
+      return b.nbSales - a.nbSales;
+    }
+    return (b.cashCollected || 0) - (a.cashCollected || 0);
+  });
+
   // Calcul des totaux en direct
-  const totalCash = entries.reduce((sum, entry) => sum + (entry.cashCollected || 0), 0);
-  const totalRevenue = entries.reduce((sum, entry) => sum + (entry.totalRevenue || 0), 0);
+  const totalCash = sortedEntries.reduce((sum, entry) => sum + (entry.cashCollected || 0), 0);
+  const totalRevenue = sortedEntries.reduce((sum, entry) => sum + (entry.totalRevenue || 0), 0);
+
+  // Fonction d'export Excel
+  const handleExportExcel = () => {
+    const data = sortedEntries.map((entry, index) => ({
+      Position: index + 1,
+      Nom: entry.name,
+      Ventes: entry.nbSales,
+      "Cash Collecté": entry.cashCollected,
+      "Revenu Total": entry.totalRevenue,
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leaderboard");
+    XLSX.writeFile(wb, "leaderboard.xlsx");
+  };
 
   return (
     <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center justify-between gap-4 flex-wrap relative">
           {/* Total Cash à gauche */}
           <div className="flex flex-col items-start min-w-[160px]">
             <span className="text-lg font-semibold text-gray-500 dark:text-gray-300">Total Cash</span>
@@ -182,10 +206,17 @@ export function LeaderboardTable() {
               GIGI&apos;s Sales Leaderboard
             </CardTitle>
           </div>
-          {/* Total Revenu à droite */}
-          <div className="flex flex-col items-end min-w-[160px]">
+          {/* Total Revenu à droite + bouton export */}
+          <div className="flex flex-col items-end min-w-[160px] gap-2">
             <span className="text-lg font-semibold text-gray-500 dark:text-gray-300">Total Revenu</span>
             <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">{totalRevenue.toLocaleString()} €</span>
+            <button
+              onClick={handleExportExcel}
+              className="mt-2 px-4 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+              title="Exporter au format Excel"
+            >
+              Exporter Excel
+            </button>
           </div>
         </div>
       </CardHeader>
@@ -202,7 +233,7 @@ export function LeaderboardTable() {
           </TableHeader>
           <TableBody>
             <AnimatePresence mode="popLayout">
-              {entries.map((entry, index) => {
+              {sortedEntries.map((entry, index) => {
                 const oldEntry = previousEntries.find((e) => e.id === entry.id);
                 const hasChanged = oldEntry && oldEntry.nbSales !== entry.nbSales;
                 const isTopThree = index < 3;
