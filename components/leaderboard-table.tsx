@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
@@ -314,11 +314,13 @@ export function LeaderboardTable() {
                             className={cn(
                               isTopThree && "font-semibold",
                               index === 0 && "text-yellow-600 dark:text-yellow-400",
+                              isBestRank && "text-green-600 dark:text-green-400",
                               "hover:underline focus:underline underline-offset-2 transition-colors cursor-pointer text-inherit no-underline text-xs sm:text-base"
                             )}
                             style={{ textDecoration: "none" }}
                           >
                             {entry.name}
+                            {isBestRank && " 🏆"}
                           </a>
                         </motion.div>
                       </TableCell>
