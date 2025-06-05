@@ -154,22 +154,39 @@ export function LeaderboardTable() {
     return () => unsubscribe();
   }, []);
 
+  // Calcul des totaux en direct
+  const totalCash = entries.reduce((sum, entry) => sum + (entry.cashCollected || 0), 0);
+  const totalRevenue = entries.reduce((sum, entry) => sum + (entry.totalRevenue || 0), 0);
+
   return (
     <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
-        <div className="flex items-center justify-center gap-4">
-          <div className="relative w-16 h-16 overflow-hidden">
-            <Image
-              src="/gigi1.png"
-              alt="Gigi"
-              fill
-              className="object-cover"
-              priority
-            />
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          {/* Total Cash à gauche */}
+          <div className="flex flex-col items-start min-w-[160px]">
+            <span className="text-lg font-semibold text-gray-500 dark:text-gray-300">Total Cash</span>
+            <span className="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">{totalCash.toLocaleString()} €</span>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">
-            GIGI&apos;s Sales Leaderboard
-          </CardTitle>
+          {/* Logo + Titre au centre */}
+          <div className="flex items-center justify-center gap-4 flex-1">
+            <div className="relative w-16 h-16 overflow-hidden">
+              <Image
+                src="/gigi1.png"
+                alt="Gigi"
+                fill
+                className="object-cover rounded-full"
+                priority
+              />
+            </div>
+            <CardTitle className="text-2xl md:text-3xl font-bold text-center whitespace-nowrap">
+              GIGI&apos;s Sales Leaderboard
+            </CardTitle>
+          </div>
+          {/* Total Revenu à droite */}
+          <div className="flex flex-col items-end min-w-[160px]">
+            <span className="text-lg font-semibold text-gray-500 dark:text-gray-300">Total Revenu</span>
+            <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">{totalRevenue.toLocaleString()} €</span>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
