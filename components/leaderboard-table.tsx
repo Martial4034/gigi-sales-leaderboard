@@ -15,7 +15,7 @@ import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { ArrowUp, ArrowDown, Minus, Download } from "lucide-react";
 import Image from "next/image";
 import * as XLSX from "xlsx";
 
@@ -184,172 +184,170 @@ export function LeaderboardTable() {
   };
 
   return (
-    <Card className="w-full max-w-6xl mx-auto">
-      <CardHeader>
-        <div className="flex items-center justify-between gap-4 flex-wrap relative">
-          {/* Total Cash à gauche */}
-          <div className="flex flex-col items-start min-w-[160px]">
-            <span className="text-lg font-semibold text-gray-500 dark:text-gray-300">Total Cash</span>
-            <span className="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">{totalCash.toLocaleString()} €</span>
+    <Card className="w-full max-w-6xl mx-auto px-1 sm:px-6">
+      <CardHeader className="pb-2 pt-4 px-2 sm:px-6">
+        {/* Titre + logo compact en haut */}
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="relative w-8 h-8 sm:w-12 sm:h-12 overflow-hidden">
+            <Image
+              src="/gigi1.png"
+              alt="Gigi"
+              fill
+              className="object-cover rounded-full"
+              priority
+            />
           </div>
-          {/* Logo + Titre au centre */}
-          <div className="flex flex-col items-center flex-1 gap-1">
-            <div className="flex items-center justify-center gap-4">
-              <div className="relative w-16 h-16 overflow-hidden">
-                <Image
-                  src="/gigi1.png"
-                  alt="Gigi"
-                  fill
-                  className="object-cover rounded-full"
-                  priority
-                />
-              </div>
-              <CardTitle className="text-2xl md:text-3xl font-bold text-center whitespace-nowrap">
-                GIGI&apos;s Sales Leaderboard
-              </CardTitle>
-            </div>
-            {/* Total ventes sous le titre */}
-            <span className="text-xl font-bold text-orange-600 dark:text-orange-400 tabular-nums mt-1">
-              Total ventes : {totalSales.toLocaleString()}
-            </span>
+          <span className="text-lg sm:text-2xl font-bold text-center">GIGI&apos;s Leaderboard</span>
+        </div>
+        {/* Totaux cash/revenu sur une ligne, total ventes dessous */}
+        <div className="flex flex-row justify-center items-center gap-4 w-full mb-1">
+          <div className="flex flex-col items-center">
+            <span className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-300">Total Cash</span>
+            <span className="text-base sm:text-xl font-bold text-green-600 dark:text-green-400 tabular-nums">{totalCash.toLocaleString()} €</span>
           </div>
-          {/* Total Revenu à droite + bouton export */}
-          <div className="flex flex-col items-end min-w-[160px] gap-2">
-            <span className="text-lg font-semibold text-gray-500 dark:text-gray-300">Total Revenu</span>
-            <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">{totalRevenue.toLocaleString()} €</span>
-            <button
-              onClick={handleExportExcel}
-              className="mt-2 px-4 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-              title="Exporter au format Excel"
-            >
-              Exporter Excel
-            </button>
+          <div className="flex flex-col items-center">
+            <span className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-300">Total Revenu</span>
+            <span className="text-base sm:text-xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">{totalRevenue.toLocaleString()} €</span>
           </div>
         </div>
+        <div className="flex justify-center">
+          <span className="text-base sm:text-lg font-bold text-orange-600 dark:text-orange-400 tabular-nums">Total ventes : {totalSales.toLocaleString()}</span>
+        </div>
+        {/* Bouton Excel aligné à droite sur desktop */}
+        <div className="hidden sm:flex w-full justify-end mt-2 pr-1">
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-1 px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+            title="Exporter au format Excel"
+          >
+            <Download className="w-4 h-4" />
+            Excel
+          </button>
+        </div>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Position</TableHead>
-              <TableHead>Nom</TableHead>
-              <TableHead className="text-right">Ventes</TableHead>
-              <TableHead className="text-right">Cash Collecté</TableHead>
-              <TableHead className="text-right">Revenu Total</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <AnimatePresence mode="popLayout">
-              {sortedEntries.map((entry, index) => {
-                const oldEntry = previousEntries.find((e) => e.id === entry.id);
-                const hasChanged = oldEntry && oldEntry.nbSales !== entry.nbSales;
-                const isTopThree = index < 3;
-                const rankChange = entry.previousRank ? entry.previousRank - entry.currentRank : 0;
-                const isBestRank = entry.currentRank === entry.bestRank;
+      <CardContent className="px-0 sm:px-4 pt-2 pb-4">
+        {/* Tableau responsive, scroll-x sur mobile, compact */}
+        <div className="overflow-x-auto rounded-lg">
+          <Table className="min-w-[340px] text-xs sm:text-base">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[36px] text-center p-1 sm:w-[70px]">#</TableHead>
+                <TableHead className="p-1">Nom</TableHead>
+                <TableHead className="text-right p-1">Ventes</TableHead>
+                {/* Colonnes cash/revenu désormais visibles partout */}
+                <TableHead className="text-right p-1">Cash</TableHead>
+                <TableHead className="text-right p-1">Revenu</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <AnimatePresence mode="popLayout">
+                {sortedEntries.map((entry, index) => {
+                  const oldEntry = previousEntries.find((e) => e.id === entry.id);
+                  const hasChanged = oldEntry && oldEntry.nbSales !== entry.nbSales;
+                  const isTopThree = index < 3;
+                  const rankChange = entry.previousRank ? entry.previousRank - entry.currentRank : 0;
+                  const isBestRank = entry.currentRank === entry.bestRank;
 
-                return (
-                  <motion.tr
-                    key={entry.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ 
-                      opacity: 1, 
-                      y: 0,
-                      backgroundColor: hasChanged ? "rgba(34, 197, 94, 0.1)" : undefined,
-                    }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ 
-                      duration: 0.5,
-                      backgroundColor: { duration: 1.5 }
-                    }}
-                    className={cn(
-                      getPositionStyle(index),
-                      "border-b transition-colors"
-                    )}
-                  >
-                    <TableCell className="font-medium">
-                      <motion.div
-                        animate={{ scale: hasChanged ? [1, 1.2, 1] : 1 }}
-                        transition={{ duration: 0.5 }}
-                        className={cn(
-                          "flex items-center gap-2 justify-center",
-                          isTopThree && "font-bold text-lg"
-                        )}
-                      >
-                        {getPositionIcon(index) ? (
-                          <span>{getPositionIcon(index)}</span>
-                        ) : (
-                          <span>{index + 1}</span>
-                        )}
-                        {getRankChangeIcon(entry.previousRank, entry.currentRank)}
-                        {rankChange !== 0 && (
-                          <span className={cn(
-                            "text-sm",
-                            rankChange > 0 ? "text-green-500" : "text-red-500"
-                          )}>
-                            {Math.abs(rankChange)}
-                          </span>
-                        )}
-                        {isBestRank && isTopThree && (
-                          <span className="text-yellow-500" title="Meilleur rang atteint">
-                            🏆
-                          </span>
-                        )}
-                      </motion.div>
-                    </TableCell>
-                    <TableCell>
-                      <motion.div
-                        animate={{ scale: hasChanged ? [1, 1.1, 1] : 1 }}
-                        transition={{ duration: 0.5 }}
-                        className="flex items-center gap-3"
-                      >
-                        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-800">
-                          <Image
-                            src={entry.avatar_image ? entry.avatar_image : `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.name}`}
-                            alt={`Avatar de ${entry.name}`}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <a
-                          href={`https://teliosa.slack.com/team/${entry.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                  return (
+                    <motion.tr
+                      key={entry.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ 
+                        opacity: 1, 
+                        y: 0,
+                        backgroundColor: hasChanged ? "rgba(34, 197, 94, 0.1)" : undefined,
+                      }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ 
+                        duration: 0.5,
+                        backgroundColor: { duration: 1.5 }
+                      }}
+                      className={cn(
+                        getPositionStyle(index),
+                        "border-b transition-colors h-8 sm:h-12"
+                      )}
+                    >
+                      <TableCell className="font-medium text-center p-1">
+                        <motion.div
+                          animate={{ scale: hasChanged ? [1, 1.2, 1] : 1 }}
+                          transition={{ duration: 0.5 }}
                           className={cn(
-                            isTopThree && "font-semibold",
-                            index === 0 && "text-yellow-600 dark:text-yellow-400",
-                            "hover:underline focus:underline underline-offset-2 transition-colors cursor-pointer text-inherit no-underline"
+                            "flex items-center gap-2 justify-center",
+                            isTopThree && "font-bold text-lg"
                           )}
-                          style={{ textDecoration: "none" }}
                         >
-                          {entry.name}
-                        </a>
-                      </motion.div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <motion.div
-                        animate={{ scale: hasChanged ? [1, 1.2, 1] : 1 }}
-                        transition={{ duration: 0.5 }}
-                        className={cn(
-                          "font-bold",
-                          isTopThree && "text-lg",
-                          index === 0 && "text-yellow-600 dark:text-yellow-400"
-                        )}
-                      >
-                        {entry.nbSales}
-                      </motion.div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {entry.cashCollected.toLocaleString()} €
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {entry.totalRevenue.toLocaleString()} €
-                    </TableCell>
-                  </motion.tr>
-                );
-              })}
-            </AnimatePresence>
-          </TableBody>
-        </Table>
+                          {getPositionIcon(index) ? (
+                            <span>{getPositionIcon(index)}</span>
+                          ) : (
+                            <span>{index + 1}</span>
+                          )}
+                          {getRankChangeIcon(entry.previousRank, entry.currentRank)}
+                          {rankChange !== 0 && (
+                            <span className={cn(
+                              "text-sm",
+                              rankChange > 0 ? "text-green-500" : "text-red-500"
+                            )}>
+                              {Math.abs(rankChange)}
+                            </span>
+                          )}
+                        </motion.div>
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <motion.div
+                          animate={{ scale: hasChanged ? [1, 1.1, 1] : 1 }}
+                          transition={{ duration: 0.5 }}
+                          className="flex items-center gap-1 sm:gap-3"
+                        >
+                          {/* Avatar masqué sur mobile */}
+                          <div className="hidden sm:block relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-800">
+                            <Image
+                              src={entry.avatar_image ? entry.avatar_image : `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.name}`}
+                              alt={`Avatar de ${entry.name}`}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <a
+                            href={`https://teliosa.slack.com/team/${entry.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                              isTopThree && "font-semibold",
+                              index === 0 && "text-yellow-600 dark:text-yellow-400",
+                              "hover:underline focus:underline underline-offset-2 transition-colors cursor-pointer text-inherit no-underline text-xs sm:text-base"
+                            )}
+                            style={{ textDecoration: "none" }}
+                          >
+                            {entry.name}
+                          </a>
+                        </motion.div>
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-xs sm:text-lg p-1">
+                        <motion.div
+                          animate={{ scale: hasChanged ? [1, 1.2, 1] : 1 }}
+                          transition={{ duration: 0.5 }}
+                          className={cn(
+                            isTopThree && "text-lg",
+                            index === 0 && "text-yellow-600 dark:text-yellow-400"
+                          )}
+                        >
+                          {entry.nbSales}
+                        </motion.div>
+                      </TableCell>
+                      {/* Colonnes cash/revenu désormais visibles partout */}
+                      <TableCell className="text-right p-1">
+                        {entry.cashCollected.toLocaleString()} €
+                      </TableCell>
+                      <TableCell className="text-right p-1">
+                        {entry.totalRevenue.toLocaleString()} €
+                      </TableCell>
+                    </motion.tr>
+                  );
+                })}
+              </AnimatePresence>
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
