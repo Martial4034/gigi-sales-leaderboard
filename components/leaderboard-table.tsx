@@ -166,6 +166,7 @@ export function LeaderboardTable() {
   // Calcul des totaux en direct
   const totalCash = sortedEntries.reduce((sum, entry) => sum + (entry.cashCollected || 0), 0);
   const totalRevenue = sortedEntries.reduce((sum, entry) => sum + (entry.totalRevenue || 0), 0);
+  const totalSales = sortedEntries.reduce((sum, entry) => sum + (entry.nbSales || 0), 0);
 
   // Fonction d'export Excel
   const handleExportExcel = () => {
@@ -192,19 +193,25 @@ export function LeaderboardTable() {
             <span className="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">{totalCash.toLocaleString()} €</span>
           </div>
           {/* Logo + Titre au centre */}
-          <div className="flex items-center justify-center gap-4 flex-1">
-            <div className="relative w-16 h-16 overflow-hidden">
-              <Image
-                src="/gigi1.png"
-                alt="Gigi"
-                fill
-                className="object-cover rounded-full"
-                priority
-              />
+          <div className="flex flex-col items-center flex-1 gap-1">
+            <div className="flex items-center justify-center gap-4">
+              <div className="relative w-16 h-16 overflow-hidden">
+                <Image
+                  src="/gigi1.png"
+                  alt="Gigi"
+                  fill
+                  className="object-cover rounded-full"
+                  priority
+                />
+              </div>
+              <CardTitle className="text-2xl md:text-3xl font-bold text-center whitespace-nowrap">
+                GIGI&apos;s Sales Leaderboard
+              </CardTitle>
             </div>
-            <CardTitle className="text-2xl md:text-3xl font-bold text-center whitespace-nowrap">
-              GIGI&apos;s Sales Leaderboard
-            </CardTitle>
+            {/* Total ventes sous le titre */}
+            <span className="text-xl font-bold text-orange-600 dark:text-orange-400 tabular-nums mt-1">
+              Total ventes : {totalSales.toLocaleString()}
+            </span>
           </div>
           {/* Total Revenu à droite + bouton export */}
           <div className="flex flex-col items-end min-w-[160px] gap-2">
