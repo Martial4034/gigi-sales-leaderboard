@@ -3,7 +3,8 @@ const nextConfig = {
   images: {
     domains: [
       "api.dicebear.com",
-      "avatars.slack-edge.com"
+      "avatars.slack-edge.com",
+      "i.imgur.com"
     ]
   }
 };
