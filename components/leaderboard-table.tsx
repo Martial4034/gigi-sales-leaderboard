@@ -769,7 +769,7 @@ export function LeaderboardTable() {
           <SignedOut>
             <SignInButton mode="modal">
               <Button variant="default" size="sm">
-                Se connecter pour voir les challenges
+                Challenges
               </Button>
             </SignInButton>
           </SignedOut>
