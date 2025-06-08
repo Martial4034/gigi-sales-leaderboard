@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell
 } from "recharts";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
 interface LeaderboardEntry {
   id: string;
@@ -738,32 +739,40 @@ export function LeaderboardTable() {
       <CardHeader className="pb-2 pt-4 px-2 sm:px-6">
         {/* Sélecteurs de challenge et de date */}
         <div className="flex flex-col sm:flex-row gap-4 mb-4">
-          <Select value={selectedChallenge} onValueChange={setSelectedChallenge}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sélectionner un challenge" />
-            </SelectTrigger>
-            <SelectContent>
-              {challenges.map((challenge) => (
-                <SelectItem key={challenge} value={challenge}>
-                  {challenge}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedDate} onValueChange={setSelectedDate}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sélectionner une date" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes les dates</SelectItem>
-              {availableDates.map((date) => (
-                <SelectItem key={date} value={date}>
-                  {new Date(date).toLocaleDateString()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SignedIn>
+            <Select value={selectedChallenge} onValueChange={setSelectedChallenge}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sélectionner un challenge" />
+              </SelectTrigger>
+              <SelectContent>
+                {challenges.map((challenge) => (
+                  <SelectItem key={challenge} value={challenge}>
+                    {challenge}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedDate} onValueChange={setSelectedDate}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sélectionner une date" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les dates</SelectItem>
+                {availableDates.map((date) => (
+                  <SelectItem key={date} value={date}>
+                    {new Date(date).toLocaleDateString()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </SignedIn>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <Button variant="default" size="sm">
+                Se connecter pour voir les challenges
+              </Button>
+            </SignInButton>
+          </SignedOut>
         </div>
 
         {/* Boutons Tableaux / Charts + Excel */}
