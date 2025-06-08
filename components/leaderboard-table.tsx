@@ -812,56 +812,111 @@ export function LeaderboardTable() {
           </div>
         </div>
 
-        {/* Titre + logo compact en haut */}
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="relative w-8 h-8 sm:w-12 sm:h-12 overflow-hidden">
-            <Image
-              src="/gigi1.png"
-              alt="Gigi"
-              fill
-              className="object-cover rounded-full"
-              priority
-            />
+        {/* Titre + logo ou nom du sale */}
+        {selectedUser && userSales.length > 0 ? (
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="relative w-8 h-8 sm:w-12 sm:h-12 overflow-hidden">
+              <Image
+                src={(() => {
+                  // Cherche l'info du sale dans entriesRef ou userSales
+                  const entry = entriesRef.current.find(e => e.id === selectedUser);
+                  if (entry && entry.avatar_image) return entry.avatar_image;
+                  if (entry) return `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.name}`;
+                  return "/gigi1.png";
+                })()}
+                alt={(() => {
+                  const entry = entriesRef.current.find(e => e.id === selectedUser);
+                  return entry ? `Avatar de ${entry.name}` : "Avatar";
+                })()}
+                fill
+                className="object-cover rounded-full"
+                priority
+              />
+            </div>
+            <span className="text-lg sm:text-2xl font-bold text-center">
+              {(() => {
+                const entry = entriesRef.current.find(e => e.id === selectedUser);
+                return entry ? entry.name : "Vendeur";
+              })()}
+            </span>
           </div>
-          <span className="text-lg sm:text-2xl font-bold text-center">GIGI&apos;s Leaderboard</span>
-        </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="relative w-8 h-8 sm:w-12 sm:h-12 overflow-hidden">
+              <Image
+                src="/gigi1.png"
+                alt="Gigi"
+                fill
+                className="object-cover rounded-full"
+                priority
+              />
+            </div>
+            <span className="text-lg sm:text-2xl font-bold text-center">GIGI&apos;s Leaderboard</span>
+          </div>
+        )}
 
         {/* Totaux */}
-        <div className="flex flex-row justify-center items-center gap-4 w-full mb-1">
-          <div className="flex flex-col items-center">
-            <span className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-300">Total Cash</span>
-            <span className="text-base sm:text-xl font-bold text-green-600 dark:text-green-400 tabular-nums">{totalCash.toLocaleString()} €
-              {/* Badge variation par rapport à la veille */}
-              {comparisons && comparisons.prevTotals && (
-                <>
-                  <VariationBadge value={totalCash - comparisons.prevTotals.cash} label="vs hier" />
-                  <PercentBadge value={comparisons.prevTotals.cash ? ((totalCash - comparisons.prevTotals.cash) / comparisons.prevTotals.cash) * 100 : 0} label="" />
-                </>
-              )}
-            </span>
+        {selectedUser && userSales.length > 0 ? (
+          <div>
+            <div className="flex flex-row justify-center items-center gap-4 w-full mb-1">
+              <div className="flex flex-col items-center">
+                <span className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-300">Total Cash</span>
+                <span className="text-base sm:text-xl font-bold text-green-600 dark:text-green-400 tabular-nums">
+                  {userSales.reduce((sum, sale) => sum + sale.Firebase_cashCollected, 0).toLocaleString()} €
+                </span>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-300">Total Revenu</span>
+                <span className="text-base sm:text-xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                  {userSales.reduce((sum, sale) => sum + sale.Firebase_totalRevenue, 0).toLocaleString()} €
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <span className="text-base sm:text-lg font-bold text-orange-600 dark:text-orange-400 tabular-nums">
+                Total ventes : {userSales.length.toLocaleString()}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col items-center">
-            <span className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-300">Total Revenu</span>
-            <span className="text-base sm:text-xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">{totalRevenue.toLocaleString()} €
-              {comparisons && comparisons.prevTotals && (
-                <>
-                  <VariationBadge value={totalRevenue - comparisons.prevTotals.revenu} label="vs hier" />
-                  <PercentBadge value={comparisons.prevTotals.revenu ? ((totalRevenue - comparisons.prevTotals.revenu) / comparisons.prevTotals.revenu) * 100 : 0} label="" />
-                </>
-              )}
-            </span>
+        ) : (
+          <div>
+            <div className="flex flex-row justify-center items-center gap-4 w-full mb-1">
+              <div className="flex flex-col items-center">
+                <span className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-300">Total Cash</span>
+                <span className="text-base sm:text-xl font-bold text-green-600 dark:text-green-400 tabular-nums">{totalCash.toLocaleString()} €
+                  {/* Badge variation par rapport à la veille */}
+                  {comparisons && comparisons.prevTotals && (
+                    <>
+                      <VariationBadge value={totalCash - comparisons.prevTotals.cash} label="vs hier" />
+                      <PercentBadge value={comparisons.prevTotals.cash ? ((totalCash - comparisons.prevTotals.cash) / comparisons.prevTotals.cash) * 100 : 0} label="" />
+                    </>
+                  )}
+                </span>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-300">Total Revenu</span>
+                <span className="text-base sm:text-xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">{totalRevenue.toLocaleString()} €
+                  {comparisons && comparisons.prevTotals && (
+                    <>
+                      <VariationBadge value={totalRevenue - comparisons.prevTotals.revenu} label="vs hier" />
+                      <PercentBadge value={comparisons.prevTotals.revenu ? ((totalRevenue - comparisons.prevTotals.revenu) / comparisons.prevTotals.revenu) * 100 : 0} label="" />
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <span className="text-base sm:text-lg font-bold text-orange-600 dark:text-orange-400 tabular-nums">Total ventes : {totalSales.toLocaleString()}
+                {comparisons && comparisons.prevTotals && (
+                  <>
+                    <VariationBadge value={totalSales - comparisons.prevTotals.ventes} label="vs hier" />
+                    <PercentBadge value={comparisons.prevTotals.ventes ? ((totalSales - comparisons.prevTotals.ventes) / comparisons.prevTotals.ventes) * 100 : 0} label="" />
+                  </>
+                )}
+              </span>
+            </div>
           </div>
-        </div>
-        <div className="flex justify-center">
-          <span className="text-base sm:text-lg font-bold text-orange-600 dark:text-orange-400 tabular-nums">Total ventes : {totalSales.toLocaleString()}
-            {comparisons && comparisons.prevTotals && (
-              <>
-                <VariationBadge value={totalSales - comparisons.prevTotals.ventes} label="vs hier" />
-                <PercentBadge value={comparisons.prevTotals.ventes ? ((totalSales - comparisons.prevTotals.ventes) / comparisons.prevTotals.ventes) * 100 : 0} label="" />
-              </>
-            )}
-          </span>
-        </div>
+        )}
         {/* Section comparatif avec les autres challenges */}
         {comparisons && comparisons.otherComparisons.length > 0 && (
           <div className="flex flex-col items-center mt-2">
