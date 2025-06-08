@@ -120,7 +120,14 @@ function SalesPerformanceCharts({ sales }: { sales: SalesData[] }) {
       salesByDate[date].revenu += sale.Firebase_totalRevenue;
     }
   });
-  const chartData: ChartData[] = Object.entries(salesByDate).map(([date, vals]) => ({ date, ...vals }));
+  // Trie les dates du plus tôt au plus tard
+  const chartData: ChartData[] = Object.entries(salesByDate)
+    .sort(([dateA], [dateB]) => {
+      const [dA, mA, yA] = dateA.split('/').map(Number);
+      const [dB, mB, yB] = dateB.split('/').map(Number);
+      return new Date(yA, mA - 1, dA).getTime() - new Date(yB, mB - 1, dB).getTime();
+    })
+    .map(([date, vals]) => ({ date, ...vals }));
   // Pie chart cash
   const cashMap: Record<number, number> = {};
   sales.forEach(sale => {
