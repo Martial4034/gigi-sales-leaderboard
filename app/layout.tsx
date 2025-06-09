@@ -9,8 +9,8 @@ import {
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GIGI Sales Leaderboard",
-  description: "Leaderboard avec authentification Clerk",
+  title: "MAYA Sales Leaderboard",
+  description: "Leaderboard MAYA",
 };
 
 export default function RootLayout({
