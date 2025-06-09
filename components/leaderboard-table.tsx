@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -822,7 +823,7 @@ export function LeaderboardTable() {
                   const entry = entriesRef.current.find(e => e.id === selectedUser);
                   if (entry && entry.avatar_image) return entry.avatar_image;
                   if (entry) return `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.name}`;
-                  return "/gigi1.png";
+                  return "/maya_normal.gif";
                 })()}
                 alt={(() => {
                   const entry = entriesRef.current.find(e => e.id === selectedUser);
@@ -844,14 +845,14 @@ export function LeaderboardTable() {
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="relative w-8 h-8 sm:w-12 sm:h-12 overflow-hidden">
               <Image
-                src="/gigi1.png"
-                alt="Gigi"
+                src="/maya_normal.gif"
+                alt="MAYA"
                 fill
                 className="object-cover rounded-full"
                 priority
               />
             </div>
-            <span className="text-lg sm:text-2xl font-bold text-center">GIGI&apos;s Leaderboard</span>
+            <span className="text-lg sm:text-2xl font-bold text-center">MAYA&apos;s Leaderboard</span>
           </div>
         )}
 
