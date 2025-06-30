@@ -525,8 +525,8 @@ export function LeaderboardTable() {
 
         if (challengeList.length > 0) {
           // Par défaut, sélectionner challenge2 si présent, sinon le plus récent
-          if (challengeList.includes('challenge2')) {
-            setSelectedChallenge('challenge2');
+          if (challengeList.includes('challenge3')) {
+            setSelectedChallenge('challenge3');
           } else {
             setSelectedChallenge(challengeList[0]);
           }
