@@ -4,7 +4,8 @@ const nextConfig = {
     domains: [
       "api.dicebear.com",
       "avatars.slack-edge.com",
-      "i.imgur.com"
+      "i.imgur.com",
+      "img.clerk.com"
     ]
   }
 };

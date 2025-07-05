@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import {
   ClerkProvider,
   SignedIn,
-  SignedOut,
   UserButton,
 } from "@clerk/nextjs";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,14 +22,13 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="fr">
         <body>
-          <header className="w-full flex justify-end items-center p-4">
-            <SignedOut>
-            </SignedOut>
-            <SignedIn>
+          <SignedIn>
+            <div className="fixed top-4 right-4 z-50">
               <UserButton />
-            </SignedIn>
-          </header>
+            </div>
+          </SignedIn>
           {children}
+          <Toaster />
         </body>
       </html>
     </ClerkProvider>

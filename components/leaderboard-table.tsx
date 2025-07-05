@@ -1,8 +1,8 @@
-
 "use client";
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -16,7 +16,7 @@ import { collection, query, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { ArrowUp, ArrowDown, Minus, Download, TrendingUp, TrendingDown, ArrowLeft } from "lucide-react";
+import { ArrowUp, ArrowDown, Minus, Download, TrendingUp, TrendingDown } from "lucide-react";
 import Image from "next/image";
 import * as XLSX from "xlsx";
 import {
@@ -109,128 +109,128 @@ const COLORS = ["#F59E42", "#3B82F6", "#22C55E", "#F43F5E", "#A78BFA", "#FBBF24"
 interface ChartData { date: string; ventes: number; cash: number; revenu: number; }
 interface SalesByUser { name: string; value: number; color: string; }
 
-function SalesPerformanceCharts({ sales }: { sales: SalesData[] }) {
-  // Préparer les données par date
-  const salesByDate: Record<string, { ventes: number, cash: number, revenu: number }> = {};
-  sales.forEach(sale => {
-    if (sale.timestamp && typeof sale.timestamp.toDate === 'function') {
-      const date = sale.timestamp.toDate().toLocaleDateString('fr-FR');
-      if (!salesByDate[date]) salesByDate[date] = { ventes: 0, cash: 0, revenu: 0 };
-      salesByDate[date].ventes += 1;
-      salesByDate[date].cash += sale.Firebase_cashCollected;
-      salesByDate[date].revenu += sale.Firebase_totalRevenue;
-    }
-  });
-  // Trie les dates du plus tôt au plus tard
-  const chartData: ChartData[] = Object.entries(salesByDate)
-    .sort(([dateA], [dateB]) => {
-      const [dA, mA, yA] = dateA.split('/').map(Number);
-      const [dB, mB, yB] = dateB.split('/').map(Number);
-      return new Date(yA, mA - 1, dA).getTime() - new Date(yB, mB - 1, dB).getTime();
-    })
-    .map(([date, vals]) => ({ date, ...vals }));
-  // Pie chart cash
-  const cashMap: Record<number, number> = {};
-  sales.forEach(sale => {
-    if (sale.Firebase_cashCollected) {
-      cashMap[sale.Firebase_cashCollected] = (cashMap[sale.Firebase_cashCollected] || 0) + 1;
-    }
-  });
-  const cashPieData = Object.entries(cashMap).map(([val, count]) => ({ name: `${val} €`, value: count }));
-  // Pie chart Split Pay / Full Pay
-  let split = 0, full = 0;
-  sales.forEach(sale => {
-    if (sale.Firebase_totalRevenue === 6000) split++;
-    if (sale.Firebase_totalRevenue === 5800) full++;
-  });
-  const splitPieData = [
-    { name: 'Split Pay', value: split },
-    { name: 'Full Pay', value: full }
-  ];
-  // Pie chart FU / OCC
-  let fu = 0, occ = 0;
-  sales.forEach(sale => {
-    if (sale.BotMode === 'FU') fu++;
-    if (sale.BotMode === 'OCC') occ++;
-  });
-  const fuOccPieData = [
-    { name: 'FU', value: fu },
-    { name: 'OCC', value: occ }
-  ];
-  return (
-    <div className="w-full flex flex-col gap-8 mb-8">
-      <div className="w-full max-w-3xl mx-auto">
-        <span className="block text-center text-base font-semibold mb-2">Historique (courbes)</span>
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="ventes" stroke="#F59E42" name="Ventes" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="cash" stroke="#22C55E" name="Cash" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="revenu" stroke="#3B82F6" name="Revenu" strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="w-full max-w-3xl mx-auto">
-        <span className="block text-center text-base font-semibold mb-2">Historique (histogramme)</span>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="ventes" fill="#F59E42" name="Ventes" />
-            <Bar dataKey="cash" fill="#22C55E" name="Cash" />
-            <Bar dataKey="revenu" fill="#3B82F6" name="Revenu" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="flex flex-wrap gap-8 justify-center">
-        <div className="w-[260px]">
-          <span className="block text-center text-base font-semibold mb-2">Répartition Cash</span>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie data={cashPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                {cashPieData.map((entry, idx) => (
-                  <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="w-[260px]">
-          <span className="block text-center text-base font-semibold mb-2">Split Pay / Full Pay</span>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie data={splitPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                <Cell fill="#F59E42" />
-                <Cell fill="#3B82F6" />
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="w-[260px]">
-          <span className="block text-center text-base font-semibold mb-2">Répartition FU / OCC</span>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie data={fuOccPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                <Cell fill="#F59E42" />
-                <Cell fill="#22C55E" />
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </div>
-  );
-}
+// function SalesPerformanceCharts({ sales }: { sales: SalesData[] }) {
+//   // Préparer les données par date
+//   const salesByDate: Record<string, { ventes: number, cash: number, revenu: number }> = {};
+//   sales.forEach(sale => {
+//     if (sale.timestamp && typeof sale.timestamp.toDate === 'function') {
+//       const date = sale.timestamp.toDate().toLocaleDateString('fr-FR');
+//       if (!salesByDate[date]) salesByDate[date] = { ventes: 0, cash: 0, revenu: 0 };
+//       salesByDate[date].ventes += 1;
+//       salesByDate[date].cash += sale.Firebase_cashCollected;
+//       salesByDate[date].revenu += sale.Firebase_totalRevenue;
+//     }
+//   });
+//   // Trie les dates du plus tôt au plus tard
+//   const chartData: ChartData[] = Object.entries(salesByDate)
+//     .sort(([dateA], [dateB]) => {
+//       const [dA, mA, yA] = dateA.split('/').map(Number);
+//       const [dB, mB, yB] = dateB.split('/').map(Number);
+//       return new Date(yA, mA - 1, dA).getTime() - new Date(yB, mB - 1, dB).getTime();
+//     })
+//     .map(([date, vals]) => ({ date, ...vals }));
+//   // Pie chart cash
+//   const cashMap: Record<number, number> = {};
+//   sales.forEach(sale => {
+//     if (sale.Firebase_cashCollected) {
+//       cashMap[sale.Firebase_cashCollected] = (cashMap[sale.Firebase_cashCollected] || 0) + 1;
+//     }
+//   });
+//   const cashPieData = Object.entries(cashMap).map(([val, count]) => ({ name: `${val} €`, value: count }));
+//   // Pie chart Split Pay / Full Pay
+//   let split = 0, full = 0;
+//   sales.forEach(sale => {
+//     if (sale.Firebase_totalRevenue === 6000) split++;
+//     if (sale.Firebase_totalRevenue === 5800) full++;
+//   });
+//   const splitPieData = [
+//     { name: 'Split Pay', value: split },
+//     { name: 'Full Pay', value: full }
+//   ];
+//   // Pie chart FU / OCC
+//   let fu = 0, occ = 0;
+//   sales.forEach(sale => {
+//     if (sale.BotMode === 'FU') fu++;
+//     if (sale.BotMode === 'OCC') occ++;
+//   });
+//   const fuOccPieData = [
+//     { name: 'FU', value: fu },
+//     { name: 'OCC', value: occ }
+//   ];
+//   return (
+//     <div className="w-full flex flex-col gap-8 mb-8">
+//       <div className="w-full max-w-3xl mx-auto">
+//         <span className="block text-center text-base font-semibold mb-2">Historique (courbes)</span>
+//         <ResponsiveContainer width="100%" height={220}>
+//           <LineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+//             <CartesianGrid strokeDasharray="3 3" />
+//             <XAxis dataKey="date" />
+//             <YAxis />
+//             <Tooltip />
+//             <Legend />
+//             <Line type="monotone" dataKey="ventes" stroke="#F59E42" name="Ventes" strokeWidth={2} dot={false} />
+//             <Line type="monotone" dataKey="cash" stroke="#22C55E" name="Cash" strokeWidth={2} dot={false} />
+//             <Line type="monotone" dataKey="revenu" stroke="#3B82F6" name="Revenu" strokeWidth={2} dot={false} />
+//           </LineChart>
+//         </ResponsiveContainer>
+//       </div>
+//       <div className="w-full max-w-3xl mx-auto">
+//         <span className="block text-center text-base font-semibold mb-2">Historique (histogramme)</span>
+//         <ResponsiveContainer width="100%" height={220}>
+//           <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+//             <CartesianGrid strokeDasharray="3 3" />
+//             <XAxis dataKey="date" />
+//             <YAxis />
+//             <Tooltip />
+//             <Legend />
+//             <Bar dataKey="ventes" fill="#F59E42" name="Ventes" />
+//             <Bar dataKey="cash" fill="#22C55E" name="Cash" />
+//             <Bar dataKey="revenu" fill="#3B82F6" name="Revenu" />
+//           </BarChart>
+//         </ResponsiveContainer>
+//       </div>
+//       <div className="flex flex-wrap gap-8 justify-center">
+//         <div className="w-[260px]">
+//           <span className="block text-center text-base font-semibold mb-2">Répartition Cash</span>
+//           <ResponsiveContainer width="100%" height={220}>
+//             <PieChart>
+//               <Pie data={cashPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+//                 {cashPieData.map((entry, idx) => (
+//                   <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+//                 ))}
+//               </Pie>
+//               <Tooltip />
+//             </PieChart>
+//           </ResponsiveContainer>
+//         </div>
+//         <div className="w-[260px]">
+//           <span className="block text-center text-base font-semibold mb-2">Split Pay / Full Pay</span>
+//           <ResponsiveContainer width="100%" height={220}>
+//             <PieChart>
+//               <Pie data={splitPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+//                 <Cell fill="#F59E42" />
+//                 <Cell fill="#3B82F6" />
+//               </Pie>
+//               <Tooltip />
+//             </PieChart>
+//           </ResponsiveContainer>
+//         </div>
+//         <div className="w-[260px]">
+//           <span className="block text-center text-base font-semibold mb-2">Répartition FU / OCC</span>
+//           <ResponsiveContainer width="100%" height={220}>
+//             <PieChart>
+//               <Pie data={fuOccPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+//                 <Cell fill="#F59E42" />
+//                 <Cell fill="#22C55E" />
+//               </Pie>
+//               <Tooltip />
+//             </PieChart>
+//           </ResponsiveContainer>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 function LeaderboardCharts({
   chartData,
@@ -400,6 +400,7 @@ interface Comparisons {
 }
 
 export function LeaderboardTable() {
+  const router = useRouter();
   const [entries, setEntries] = useState<EntryWithRank[]>([]);
   const [previousEntries, setPreviousEntries] = useState<EntryWithRank[]>([]);
   const [challenges, setChallenges] = useState<string[]>([]);
@@ -410,8 +411,6 @@ export function LeaderboardTable() {
   const [challengeDates, setChallengeDates] = useState<Record<string, string[]>>({});
   const [viewMode, setViewMode] = useState<'table' | 'charts'>('table');
   const [allDocsByDate, setAllDocsByDate] = useState<Record<string, SalesData[]>>({});
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [userSales, setUserSales] = useState<SalesData[]>([]);
 
   // Déterminer l'index du jour sélectionné dans le challenge courant
   const currentDayIndex = selectedDate !== "all" && challengeDates[selectedChallenge]
@@ -557,10 +556,12 @@ export function LeaderboardTable() {
     fetchChallengeDates();
   }, []);
 
-  // Récupérer tous les documents du challenge sélectionné et les regrouper par date
+  const challengeDatesForSelected = challengeDates[selectedChallenge];
+  const challengeDatesForSelectedString = JSON.stringify(challengeDatesForSelected);
+
   useEffect(() => {
     async function fetchDocsByDate() {
-      if (!selectedChallenge || !challengeDates[selectedChallenge]) return;
+      if (!selectedChallenge || !challengeDatesForSelected) return;
       const q = query(collection(db, selectedChallenge));
       const snapshot = await getDocs(q);
       const docsByDate: Record<string, SalesData[]> = {};
@@ -577,7 +578,7 @@ export function LeaderboardTable() {
       setAllDocsByDate(docsByDate);
     }
     fetchDocsByDate();
-  }, [selectedChallenge, JSON.stringify(challengeDates[selectedChallenge])]);
+  }, [selectedChallenge, challengeDatesForSelected, challengeDatesForSelectedString, challengeDates]);
 
   // Récupérer les données du challenge sélectionné
   useEffect(() => {
@@ -713,35 +714,6 @@ export function LeaderboardTable() {
     }));
   }
 
-  // Quand un vendeur est sélectionné, récupérer ses ventes pour le challenge courant
-  useEffect(() => {
-    async function fetchUserSales() {
-      if (!selectedUser || !selectedChallenge) return;
-      const q = query(collection(db, selectedChallenge));
-      const snapshot = await getDocs(q);
-      const sales: SalesData[] = [];
-      snapshot.docs.forEach(doc => {
-        const data = doc.data() as SalesData;
-        if (data.id_slack === selectedUser) {
-          sales.push(data);
-        }
-      });
-      // Trier par date décroissante
-      sales.sort((a, b) => {
-        const dateA = a.timestamp && typeof a.timestamp.toDate === 'function' ? a.timestamp.toDate().getTime() : 0;
-        const dateB = b.timestamp && typeof b.timestamp.toDate === 'function' ? b.timestamp.toDate().getTime() : 0;
-        return dateB - dateA;
-      });
-      setUserSales(sales);
-    }
-    fetchUserSales();
-  }, [selectedUser, selectedChallenge]);
-
-  const challengeDatesForSelected = challengeDates[selectedChallenge];
-  useEffect(() => {
-    // ...
-  }, [selectedChallenge, challengeDatesForSelected, challengeDates]);
-
   return (
     <Card className="w-full max-w-6xl mx-auto px-1 sm:px-6">
       <CardHeader className="pb-2 pt-4 px-2 sm:px-6">
@@ -777,7 +749,7 @@ export function LeaderboardTable() {
           <SignedOut>
             <SignInButton mode="modal">
               <Button variant="default" size="sm">
-                Challenges
+                Se connecter en tant que Sales
               </Button>
             </SignInButton>
           </SignedOut>
@@ -813,35 +785,7 @@ export function LeaderboardTable() {
           </div>
         </div>
 
-        {/* Titre + logo ou nom du sale */}
-        {selectedUser && userSales.length > 0 ? (
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="relative w-8 h-8 sm:w-12 sm:h-12 overflow-hidden">
-              <Image
-                src={(() => {
-                  // Cherche l'info du sale dans entriesRef ou userSales
-                  const entry = entriesRef.current.find(e => e.id === selectedUser);
-                  if (entry && entry.avatar_image) return entry.avatar_image;
-                  if (entry) return `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.name}`;
-                  return "/maya_normal.gif";
-                })()}
-                alt={(() => {
-                  const entry = entriesRef.current.find(e => e.id === selectedUser);
-                  return entry ? `Avatar de ${entry.name}` : "Avatar";
-                })()}
-                fill
-                className="object-cover rounded-full"
-                priority
-              />
-            </div>
-            <span className="text-lg sm:text-2xl font-bold text-center">
-              {(() => {
-                const entry = entriesRef.current.find(e => e.id === selectedUser);
-                return entry ? entry.name : "Vendeur";
-              })()}
-            </span>
-          </div>
-        ) : (
+        {/* Titre + logo */}
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="relative w-8 h-8 sm:w-12 sm:h-12 overflow-hidden">
               <Image
@@ -854,32 +798,8 @@ export function LeaderboardTable() {
             </div>
             <span className="text-lg sm:text-2xl font-bold text-center">MAYA&apos;s Leaderboard</span>
           </div>
-        )}
 
         {/* Totaux */}
-        {selectedUser && userSales.length > 0 ? (
-          <div>
-            <div className="flex flex-row justify-center items-center gap-4 w-full mb-1">
-              <div className="flex flex-col items-center">
-                <span className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-300">Total Cash</span>
-                <span className="text-base sm:text-xl font-bold text-green-600 dark:text-green-400 tabular-nums">
-                  {userSales.reduce((sum, sale) => sum + sale.Firebase_cashCollected, 0).toLocaleString()} €
-                </span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-300">Total Revenu</span>
-                <span className="text-base sm:text-xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">
-                  {userSales.reduce((sum, sale) => sum + sale.Firebase_totalRevenue, 0).toLocaleString()} €
-                </span>
-              </div>
-            </div>
-            <div className="flex justify-center">
-              <span className="text-base sm:text-lg font-bold text-orange-600 dark:text-orange-400 tabular-nums">
-                Total ventes : {userSales.length.toLocaleString()}
-              </span>
-            </div>
-          </div>
-        ) : (
           <div>
             <div className="flex flex-row justify-center items-center gap-4 w-full mb-1">
               <div className="flex flex-col items-center">
@@ -917,7 +837,6 @@ export function LeaderboardTable() {
               </span>
             </div>
           </div>
-        )}
         {/* Section comparatif avec les autres challenges */}
         {comparisons && comparisons.otherComparisons.length > 0 && (
           <div className="flex flex-col items-center mt-2">
@@ -937,49 +856,7 @@ export function LeaderboardTable() {
       </CardHeader>
 
       <CardContent className="px-0 sm:px-4 pt-2 pb-4">
-        {selectedUser ? (
-          <div className="flex flex-col gap-4">
-            <SalesPerformanceCharts sales={userSales} />
-            <div className="flex items-center gap-2 mb-2">
-              <button
-                onClick={() => setSelectedUser(null)}
-                className="flex items-center gap-1 px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-              >
-                <ArrowLeft className="w-4 h-4" /> Retour
-              </button>
-              <span className="text-lg font-bold ml-2">Historique des ventes</span>
-            </div>
-            {userSales.length === 0 ? (
-              <div className="text-center text-gray-500">Aucune vente trouvée pour ce vendeur.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-xs sm:text-base border rounded-lg">
-                  <thead>
-                    <tr className="bg-gray-50 dark:bg-gray-900/40">
-                      <th className="p-2">Date</th>
-                      <th className="p-2">Montant Cash</th>
-                      <th className="p-2">Montant Revenu</th>
-                      <th className="p-2">Mode</th>
-                      <th className="p-2">Commentaire</th>
-                      {/* Ajoute d'autres colonnes si besoin */}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {userSales.map((sale, idx) => (
-                      <tr key={idx} className="border-b">
-                        <td className="p-2">{sale.timestamp && typeof sale.timestamp.toDate === 'function' ? sale.timestamp.toDate().toLocaleString('fr-FR') : ''}</td>
-                        <td className="p-2">{sale.Firebase_cashCollected?.toLocaleString()} €</td>
-                        <td className="p-2">{sale.Firebase_totalRevenue?.toLocaleString()} €</td>
-                        <td className="p-2">{sale.BotMode || ''}</td>
-                        <td className="p-2">{sale.Botcommentaire || ''}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        ) : viewMode === 'table' ? (
+        {viewMode === 'table' ? (
           <div className="overflow-x-auto rounded-lg">
             <Table className="min-w-[340px] text-xs sm:text-base">
               <TableHeader>
@@ -1016,9 +893,9 @@ export function LeaderboardTable() {
                         }}
                         className={cn(
                           getPositionStyle(index),
-                          "border-b transition-colors h-8 sm:h-12 cursor-pointer"
+                          "border-b transition-colors h-8 sm:h-12 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
                         )}
-                        onClick={() => setSelectedUser(entry.id)}
+                        onClick={() => router.push(`/vendeur/${entry.id}?challenge=${selectedChallenge}`)}
                       >
                         <TableCell className="font-medium text-center p-1 sm:w-[70px]">
                           <motion.div
