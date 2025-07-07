@@ -113,20 +113,47 @@ export default function VendeurProfile() {
         if (vendeurInfo) {
           setVendeurInfo(vendeurInfo);
           
-          // Récupérer les challenges disponibles
-          const challenges = ['challenge1', 'challenge2', 'challenge3'];
+          // Récupérer les challenges disponibles depuis challenge_info
+          const challengeInfoRef = collection(db, "challenge_info");
+          const challengeInfoSnapshot = await getDocs(challengeInfoRef);
           const availableChallenges: string[] = [];
           
-          for (const challenge of challenges) {
-            try {
-              const challengeRef = collection(db, challenge);
-              const challengeSnapshot = await getDocs(challengeRef);
-              if (!challengeSnapshot.empty) {
-                availableChallenges.push(challenge);
+          if (!challengeInfoSnapshot.empty) {
+            // Récupérer le document mapping qui contient les challenges
+            const mappingDoc = challengeInfoSnapshot.docs[0].data();
+            console.log('📋 Challenges disponibles dans challenge_info:', mappingDoc);
+            
+            // Extraire et trier les clés des challenges (challenge1, challenge2, etc.)
+            const challengeKeys = Object.keys(mappingDoc)
+              .filter(key => key.startsWith('challenge'))
+              .sort((a, b) => {
+                // Extraire les numéros des challenges pour un tri numérique
+                const numA = parseInt(a.replace('challenge', ''));
+                const numB = parseInt(b.replace('challenge', ''));
+                return numA - numB;
+              });
+            
+            for (const key of challengeKeys) {
+              const value = mappingDoc[key];
+              if (Array.isArray(value)) {
+                availableChallenges.push(key);
+                console.log(`✅ Challenge trouvé: ${key} avec ${value.length} dates`);
               }
-            } catch {
-              // Ignorer les challenges qui n'existent pas
-              console.log(`Challenge ${challenge} non trouvé`);
+            }
+          } else {
+            console.log('⚠️ Collection challenge_info vide, utilisation des challenges par défaut');
+            // Fallback vers les challenges par défaut si challenge_info est vide
+            const defaultChallenges = ['challenge1', 'challenge2', 'challenge3'];
+            for (const challenge of defaultChallenges) {
+              try {
+                const challengeRef = collection(db, challenge);
+                const challengeSnapshot = await getDocs(challengeRef);
+                if (!challengeSnapshot.empty) {
+                  availableChallenges.push(challenge);
+                }
+              } catch {
+                console.log(`Challenge ${challenge} non trouvé`);
+              }
             }
           }
           
@@ -283,10 +310,10 @@ export default function VendeurProfile() {
         const allSales: SalesData[] = [];
         
         if (selectedChallenge === 'Tous les challenges') {
-          // Récupérer les ventes de tous les challenges
-          const challenges = ['challenge1', 'challenge2', 'challenge3'];
+          // Récupérer les ventes de tous les challenges disponibles
+          const dynamicChallenges = availableChallenges.filter(c => c !== 'Tous les challenges');
           
-          for (const challenge of challenges) {
+          for (const challenge of dynamicChallenges) {
             try {
               const challengeRef = collection(db, challenge);
               const challengeSnapshot = await getDocs(challengeRef);
@@ -344,7 +371,7 @@ export default function VendeurProfile() {
     };
 
     fetchSalesData();
-  }, [selectedChallenge, vendeurInfo, params.id]);
+  }, [selectedChallenge, vendeurInfo, params.id, availableChallenges]);
 
   // Fonctions pour gérer l'édition inline
   const startEditing = (index: number, sale: SalesData) => {
@@ -501,10 +528,10 @@ export default function VendeurProfile() {
         const allSales: SalesData[] = [];
         
         if (selectedChallenge === 'Tous les challenges') {
-          // Récupérer les ventes de tous les challenges
-          const challenges = ['challenge1', 'challenge2', 'challenge3'];
+          // Récupérer les ventes de tous les challenges disponibles
+          const dynamicChallenges = availableChallenges.filter(c => c !== 'Tous les challenges');
           
-          for (const challenge of challenges) {
+          for (const challenge of dynamicChallenges) {
             try {
               const challengeRef = collection(db, challenge);
               const challengeSnapshot = await getDocs(challengeRef);
@@ -512,6 +539,7 @@ export default function VendeurProfile() {
               challengeSnapshot.docs.forEach((doc) => {
                 const data = doc.data() as SalesData;
                 if (data.id_slack === vendeurId) {
+                  // Ajouter le challenge comme propriété pour l'identification
                   allSales.push({
                     ...data,
                     challenge: challenge
@@ -519,6 +547,7 @@ export default function VendeurProfile() {
                 }
               });
             } catch {
+              // Ignorer les challenges qui n'existent pas
               console.log(`Challenge ${challenge} non trouvé`);
             }
           }

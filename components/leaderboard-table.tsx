@@ -503,35 +503,66 @@ export function LeaderboardTable() {
     );
   }
 
-  // Récupérer la liste des challenges
+  // Récupérer la liste des challenges depuis challenge_info
   useEffect(() => {
     const fetchChallenges = async () => {
       try {
-        let challengeNumber = 1;
-        let challengesExist = true;
-        const challengeList = [];
-
-        // Vérifier chaque challenge jusqu'à ce qu'on trouve un qui n'existe pas
-        while (challengesExist) {
-          const challenge = await getDocs(collection(db, `challenge${challengeNumber}`));
-          if (!challenge.empty) {
-            challengeList.push(`challenge${challengeNumber}`);
-            challengeNumber++;
+        const challengeInfoRef = collection(db, "challenge_info");
+        const challengeInfoSnapshot = await getDocs(challengeInfoRef);
+        
+        if (!challengeInfoSnapshot.empty) {
+          // Récupérer le document mapping qui contient les challenges
+          const mappingDoc = challengeInfoSnapshot.docs[0].data();
+          console.log('📋 Challenges disponibles dans challenge_info (leaderboard):', mappingDoc);
+          
+          // Extraire et trier les clés des challenges (challenge1, challenge2, etc.)
+          const challengeKeys = Object.keys(mappingDoc)
+            .filter(key => key.startsWith('challenge'))
+            .sort((a, b) => {
+              // Extraire les numéros des challenges pour un tri numérique
+              const numA = parseInt(a.replace('challenge', ''));
+              const numB = parseInt(b.replace('challenge', ''));
+              return numA - numB;
+            });
+          
+          if (challengeKeys.length > 0) {
+            // Par défaut, sélectionner le dernier challenge (le plus récent)
+            const lastChallenge = challengeKeys[challengeKeys.length - 1];
+            setSelectedChallenge(lastChallenge);
+            setChallenges(challengeKeys);
+            console.log('✅ Challenges triés:', challengeKeys);
+            console.log('🎯 Challenge sélectionné par défaut:', lastChallenge);
           } else {
-            challengesExist = false;
+            toast.error("Aucun challenge trouvé dans challenge_info");
           }
-        }
-
-        if (challengeList.length > 0) {
-          // Par défaut, sélectionner challenge2 si présent, sinon le plus récent
-          if (challengeList.includes('challenge3')) {
-            setSelectedChallenge('challenge3');
-          } else {
-            setSelectedChallenge(challengeList[0]);
-          }
-          setChallenges(challengeList);
         } else {
-          toast.error("Aucun challenge trouvé");
+          console.log('⚠️ Collection challenge_info vide, utilisation de la méthode de fallback');
+          // Fallback vers l'ancienne méthode si challenge_info est vide
+          let challengeNumber = 1;
+          let challengesExist = true;
+          const challengeList = [];
+
+          // Vérifier chaque challenge jusqu'à ce qu'on trouve un qui n'existe pas
+          while (challengesExist) {
+            const challenge = await getDocs(collection(db, `challenge${challengeNumber}`));
+            if (!challenge.empty) {
+              challengeList.push(`challenge${challengeNumber}`);
+              challengeNumber++;
+            } else {
+              challengesExist = false;
+            }
+          }
+
+          if (challengeList.length > 0) {
+            // Par défaut, sélectionner le dernier challenge (le plus récent)
+            const lastChallenge = challengeList[challengeList.length - 1];
+            setSelectedChallenge(lastChallenge);
+            setChallenges(challengeList);
+            console.log('✅ Challenges trouvés (fallback):', challengeList);
+            console.log('🎯 Challenge sélectionné par défaut (fallback):', lastChallenge);
+          } else {
+            toast.error("Aucun challenge trouvé");
+          }
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des challenges:", error);
@@ -547,7 +578,11 @@ export function LeaderboardTable() {
       try {
         const infoDoc = await getDoc(doc(db, "challenge_info", "mapping"));
         if (infoDoc.exists()) {
-          setChallengeDates(infoDoc.data() as Record<string, string[]>);
+          const mappingData = infoDoc.data() as Record<string, string[]>;
+          console.log('📅 Dates des challenges récupérées:', mappingData);
+          setChallengeDates(mappingData);
+        } else {
+          console.log('⚠️ Document mapping non trouvé dans challenge_info');
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des dates de challenge:", error);
