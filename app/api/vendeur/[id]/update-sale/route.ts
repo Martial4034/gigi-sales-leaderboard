@@ -124,7 +124,7 @@ export async function POST(
       return NextResponse.json({ error: 'Montant cash invalide' }, { status: 400 });
     }
 
-    if (updates.Firebase_totalRevenue && ![5800, 6000].includes(updates.Firebase_totalRevenue)) {
+    if (updates.Firebase_totalRevenue && ![6800, 7000].includes(updates.Firebase_totalRevenue)) {
       return NextResponse.json({ error: 'Montant revenu invalide' }, { status: 400 });
     }
 
