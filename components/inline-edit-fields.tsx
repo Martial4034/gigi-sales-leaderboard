@@ -143,8 +143,8 @@ export function InlineRevenueInput({ value, onValueChange, isEditing, onEdit, cl
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="5800">6800€</SelectItem>
-          <SelectItem value="6000">7000€</SelectItem>
+          <SelectItem value="6800">6800€</SelectItem>
+          <SelectItem value="7000">7000€</SelectItem>
         </SelectContent>
       </Select>
     );
